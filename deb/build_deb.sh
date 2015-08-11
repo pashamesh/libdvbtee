@@ -35,7 +35,7 @@ main() {
   build_dir_ldconf=${build_dir_base}/etc/ld.so.conf.d
 
   # Run sources build
-  cd "${compiled_base_dir}" && autoreconf -i && ./configure --prefix="${build_dir}" && make clean && make && make install-strip
+  cd "${compiled_base_dir}" && ./build.sh 
   if [ "$?" -ne "0" ]; then
     err "Build failed"
     exit 1
@@ -55,9 +55,18 @@ main() {
   # end check fpm package
 
   # Prepare file for deb packaging
+  rm -rf "${build_dir_base}"
+
+  mkdir -p "${build_dir}"/{bin,lib}
   mkdir -p "${build_dir_ldconf}"
 
   echo "${pkg_install_dir}/lib" > "${build_dir_ldconf}/libdvbtee.conf"
+
+  rsync -a "${compiled_base_dir}/usr/" "${build_dir}"
+  rsync -a "${compiled_base_dir}/dvbtee/dvbtee" "${build_dir}/bin"
+  rsync -a "${compiled_base_dir}/libdvbtee/libdvbtee.so"* \
+    "${compiled_base_dir}/libdvbtee_server/libdvbtee_server.so"* \
+    "${build_dir}/lib"
   # end Prepare file for deb packaging
 
   pkg_name="dvbtee"
@@ -75,7 +84,6 @@ main() {
     --after-install "${current_dir}/scripts/_after-install.sh" \
     --after-remove "${current_dir}/scripts/_after-remove.sh" \
     --depends "libhdhomerun1 >= 20140121-1" \
-    --depends "libdvbpsi9" \
     --iteration "${pkg_iteration}"
 
   rm -rf "${build_dir_base}"
